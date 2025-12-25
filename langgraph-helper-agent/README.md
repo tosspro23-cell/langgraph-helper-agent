@@ -1,55 +1,64 @@
-Project: LangGraph Helper Agent
-Focus: Explicit Agent Control · Mode-Aware Knowledge Access · Scalable Design
+# LangGraph Helper Agent
 
-1. Project Overview
+A LangGraph-based technical advisor agent designed to help developers understand, design, and reason about LangGraph and LangChain systems.
 
-This project implements a LangGraph Helper Agent designed to help developers work with LangGraph and LangChain.
+---
 
-The agent is intentionally positioned as a technical advisor, not a code generator.
-Its goal is to help developers understand why certain designs are recommended, how different approaches compare, and what trade-offs exist when building production-grade agent systems.
+## 1. Project Overview
 
-The system emphasizes:
+This project implements a **LangGraph Helper Agent** focused on system design and architectural reasoning rather than code generation.
 
-Explicit control over agent behavior
+The agent is intentionally positioned as a **technical advisor**, helping developers understand:
 
-Clear separation of decision logic and language generation
+- Why certain designs are recommended
+- How different approaches compare
+- What trade-offs exist in production-grade agent systems
 
-Scalability from simple workflows to production-grade systems
+The goal is to provide clear, structured guidance that supports long-term system thinking rather than short-term code output.
 
-2. Design Philosophy
-2.1 Technical Advisor over Code Generator
+---
 
-This agent optimizes for decision quality, not code throughput.
+## 2. Design Philosophy
 
-While code examples can be helpful, most real-world issues in LangGraph-based systems arise before code is written—in architecture, state design, and control-flow decisions.
-The agent therefore focuses on explaining concepts, rationale, and trade-offs rather than producing narrowly scoped code snippets.
+### 2.1 Technical Advisor over Code Generator
 
-2.2 Coverage-First Offline Mode
+This agent optimizes for **decision quality**, not code throughput.
 
-Offline mode prioritizes conceptual coverage and completeness over narrowly deterministic answers.
+Most real-world issues in LangGraph-based systems arise **before code is written**—in architecture, state design, and control-flow decisions.  
+Accordingly, the agent focuses on explaining concepts, rationale, and trade-offs instead of producing narrowly scoped code snippets.
 
-Instead of retrieving a single “best” document chunk, the agent aggregates multiple relevant perspectives to help developers build a correct mental model, even without internet access.
+---
 
-This is particularly important in offline environments where information freshness cannot be guaranteed.
+### 2.2 Coverage-First Offline Mode
 
-2.3 Simplicity as a Scalability Strategy
+Offline mode prioritizes **conceptual coverage and completeness** over narrowly deterministic answers.
 
-The system starts with:
+Instead of retrieving a single “best” document chunk, the agent aggregates multiple relevant perspectives to help developers build a correct **mental model**, even without internet access.
 
-A minimal graph
+This approach reduces the risk of misunderstanding when documentation is incomplete or outdated.
 
-A small, explicit state schema
+---
 
-Clear node responsibilities
+### 2.3 Simplicity as a Scalability Strategy
 
-This simplicity is intentional.
-Rather than optimizing for feature richness, the design optimizes for clarity, predictability, and long-term extensibility.
+The system intentionally starts with:
 
-3. High-Level Architecture
-3.1 Graph Overview
+- A minimal graph
+- A small, explicit state schema
+- Clear node responsibilities
 
-The agent is implemented as a single LangGraph StateGraph with mode-aware routing:
+This simplicity is deliberate.  
+Rather than optimizing for feature richness, the design optimizes for **clarity, predictability, and long-term extensibility**.
 
+---
+
+## 3. High-Level Architecture
+
+### 3.1 Graph Overview
+
+The agent is implemented as a single **LangGraph StateGraph** with mode-aware routing:
+
+```text
 User Input
    ↓
 Mode Router
@@ -61,118 +70,160 @@ Knowledge Retrieval
 Advisor Answer Synthesizer
    ↓
 Final Response
-
-
+```
 Both offline and online paths converge into the same synthesis node to ensure consistent answer structure and quality.
 
-3.2 Why StateGraph (Not MessageGraph)
+### 3.2 Why StateGraph (Not MessageGraph)
 
-This project uses StateGraph to keep system behavior explicit and predictable.
+This project intentionally uses **StateGraph** instead of MessageGraph to keep agent behavior explicit, predictable, and scalable.
 
 StateGraph enables:
 
-Explicit state management
+- Explicit state management
+- Deterministic routing decisions
+- Clear separation between control logic and language generation
+- Easier debugging and reasoning as the system grows
 
-Deterministic routing decisions
+Message-driven implicit decision making is intentionally avoided, as it can cause behavior drift when the agent starts adapting too strongly to conversational context rather than architectural intent.
 
-Clear separation between control logic and language generation
+---
 
-Message-driven implicit decision making is intentionally avoided to prevent behavior drift as system complexity grows.
+## 4. Agent State Schema
 
-4. Agent State Schema
+The agent uses a minimal and explicit state schema to coordinate execution across nodes:
 
-The agent uses a minimal explicit state schema:
+- `query`  
+  The original user question and immutable starting point.
 
-query — original user question
+- `mode`  
+  Execution mode: `offline` or `online`.
 
-mode — offline or online
+- `retrieved_context`  
+  Aggregated knowledge retrieved from documentation or online sources.
 
-retrieved_context — aggregated knowledge inputs
+- `final_answer`  
+  The synthesized, structured response returned to the user.
 
-final_answer — synthesized response
+Raw message history is intentionally excluded to avoid hidden coupling between nodes and to keep system reasoning transparent.
 
-Raw message history is intentionally excluded to avoid hidden coupling between nodes.
+---
 
-5. Node Responsibilities
-Mode Router
+## 5. Node Responsibilities
 
-Reads execution mode
+Each node follows a **single-responsibility principle**, ensuring clarity and maintainability.
 
-Selects offline or online retrieval path
+---
 
-Contains control logic only
+### Mode Router
 
-Offline Knowledge Aggregator
+- Reads the execution mode from state
+- Selects the appropriate retrieval path
+- Contains control logic only
+- Does not perform retrieval or generation
 
-Uses locally indexed llms.txt documentation
+---
 
-Retrieves multiple relevant segments
+### Offline Knowledge Aggregator
 
-Optimized for conceptual completeness
+- Uses locally indexed documentation (e.g. `llms.txt`)
+- Retrieves multiple relevant segments
+- Prioritizes conceptual coverage and completeness
+- Writes aggregated content into `retrieved_context`
 
-Online Knowledge Retriever
+This mode is optimized for learning and architectural understanding rather than precision recall.
 
-Uses free-tier search APIs
+---
 
-Focuses on freshness
+### Online Knowledge Retriever
 
-Stateless and non-persistent
+- Uses free-tier online search services
+- Focuses on information freshness
+- Does not persist external data
+- Acts as a complement to offline knowledge
 
-Advisor Answer Synthesizer
+---
 
-Combines retrieved knowledge
+### Advisor Answer Synthesizer
 
-Explains rationale and trade-offs
+This node represents the core value of the agent as a **technical advisor**.
 
-Produces structured, educational responses
+Responsibilities include:
 
-6. Operating Modes
-Offline Mode
+- Combining retrieved knowledge
+- Explaining concepts and rationale
+- Highlighting trade-offs and alternatives
+- Producing structured, educational responses
 
-No external web access
+The output style is consistent regardless of the retrieval source.
 
-Uses local documentation
+---
 
-Optimized for learning and architectural reasoning
+## 6. Operating Modes
 
-Online Mode
+### 6.1 Offline Mode
 
-Allows internet access
+- No external web access
+- Uses local documentation only
+- Suitable for restricted or disconnected environments
+- Optimized for conceptual depth and completeness
 
-Uses free-tier search services
+---
 
-Complements offline knowledge with fresh information
+### 6.2 Online Mode
 
-Mode can be selected via CLI flag or environment variable.
+- Allows internet connectivity
+- Uses free-tier external services
+- Focuses on up-to-date information
+- Complements offline knowledge
 
-7. LangGraph vs LangChain Usage
+Execution mode can be controlled via environment variables or command-line flags.
 
-LangGraph is used as the primary orchestration and control layer
+---
 
-LangChain is used as a capability layer for:
+## 7. LangGraph vs LangChain Usage
 
-LLM abstraction
+This project deliberately separates **behavior control** from **capability access**:
 
-Prompt templates
+- **LangGraph** is used as the orchestration and control layer:
+  - Defines execution order
+  - Controls routing and decision logic
+  - Manages explicit system state
 
-Retrieval utilities
+- **LangChain** is used as a capability layer:
+  - LLM abstractions
+  - Prompt templates
+  - Retrieval and utility components
 
-LangChain components are orchestrated by LangGraph but do not control system flow.
+LangChain components are orchestrated by LangGraph but do not drive system flow.
 
-8. Design Trade-offs
+---
+
+## 8. Design Trade-offs
 
 This project intentionally avoids:
 
-Implicit message-driven decision making
+- Implicit message-driven decision making
+- Overly complex graph structures
+- Hidden long-term memory or uncontrolled state growth
 
-Overly complex graph structures
+These trade-offs favor:
 
-Hidden long-term memory
+- Clarity over cleverness
+- Predictability over flexibility
+- Long-term maintainability over short-term convenience
 
-These choices favor clarity, debuggability, and predictable evolution over short-term flexibility.
+Simplicity is treated as an architectural asset rather than a limitation.
 
-9. Summary
+---
 
-This project demonstrates how LangGraph can be used to design agent systems with explicit behavior control, rather than relying on prompt-based implicit logic.
+## 9. Summary
 
-The result is an agent that is easier to reason about, extend, and adapt across different project contexts.
+This project demonstrates how **LangGraph can be used as a system design tool**, not just an agent orchestration framework.
+
+By making agent behavior, state, and control flow explicit, the system remains:
+
+- Easier to reason about
+- Easier to debug
+- Easier to extend across different project contexts
+
+The result is an agent designed for architectural correctness and long-term scalability rather than prompt-based implicit behavior.
