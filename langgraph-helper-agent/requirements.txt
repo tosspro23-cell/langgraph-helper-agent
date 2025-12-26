@@ -7,9 +7,10 @@ langchain-core>=0.2.0
 openai>=1.0.0
 
 # Online search (free, no API key)
-duckduckgo-search>=5.3.0
+ddgs>=0.8.0
 
 # Utilities
 requests
 pydantic>=2.0
+
 
