@@ -1,6 +1,27 @@
+from duckduckgo_search import DDGS
+
+
 def online_retrieve(state):
-    context = [
-        "Latest LangGraph features...",
-        "Recent best practices...",
-    ]
-    return {"retrieved_context": context}
+    """
+    Perform a lightweight online search to retrieve fresh information.
+
+    This node is intentionally simple:
+    - No API key required
+    - Free-tier friendly
+    - Designed to demonstrate real online mode behavior
+    """
+    query = state.get("query", "")
+    results = []
+
+    if not query:
+        return {"retrieved_context": []}
+
+    with DDGS() as ddgs:
+        for r in ddgs.text(query, max_results=5):
+            body = r.get("body")
+            if body:
+                results.append(body)
+
+    return {
+        "retrieved_context": results
+    }
