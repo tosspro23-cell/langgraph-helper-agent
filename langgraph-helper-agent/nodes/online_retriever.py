@@ -25,3 +25,12 @@ def online_retrieve(state):
     return {
         "retrieved_context": results
     }
+    
+     # 🔍 DEBUG LOG (temporary)
+    print("\n=== ONLINE SEARCH TRIGGERED ===")
+    print(f"Query: {query}")
+    for i, r in enumerate(results, 1):
+        print(f"{i}. {r}")
+    print("=== END ONLINE SEARCH ===\n")
+
+    return {"retrieved_context": results}
