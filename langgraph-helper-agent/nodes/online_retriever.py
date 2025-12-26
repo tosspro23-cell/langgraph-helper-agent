@@ -5,10 +5,9 @@ def online_retrieve(state):
     """
     Perform a lightweight online search to retrieve fresh information.
 
-    This node is intentionally simple:
     - No API key required
     - Free-tier friendly
-    - Designed to demonstrate real online mode behavior
+    - Demonstrates real online mode behavior
     """
     query = state.get("query", "")
     results = []
@@ -22,16 +21,13 @@ def online_retrieve(state):
             if body:
                 results.append(body)
 
-    return {
-        "retrieved_context": results
-    }
-    
-     # 🔍 DEBUG LOG (temporary)
+    # 🔍 DEBUG LOG
     print("\n=== ONLINE SEARCH TRIGGERED ===")
     print(f"Query: {query}")
     for i, r in enumerate(results, 1):
-        print(f"{i}. {r}")
+        print(f"{i}. {r[:120]}...")
     print("=== END ONLINE SEARCH ===\n")
 
-    return {"retrieved_context": results}
-
+    return {
+        "retrieved_context": results
+    }
