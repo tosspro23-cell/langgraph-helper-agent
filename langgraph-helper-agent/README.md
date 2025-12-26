@@ -6,7 +6,7 @@ A LangGraph-based technical advisor agent designed to help developers understand
 
 ## 1. Project Overview
 
-This project implements a **LangGraph Helper Agent** focused on system design and architectural reasoning rather than code generation.
+This project implements a **LangGraph Helper Agent** focused on system design and architectural reasoning rather than pure code generation.
 
 The agent is intentionally positioned as a **technical advisor**, helping developers understand:
 
@@ -71,7 +71,10 @@ Advisor Answer Synthesizer
    ↓
 Final Response
 ```
+
 Both offline and online paths converge into the same synthesis node to ensure consistent answer structure and quality.
+
+---
 
 ### 3.2 Why StateGraph (Not MessageGraph)
 
@@ -84,13 +87,13 @@ StateGraph enables:
 - Clear separation between control logic and language generation
 - Easier debugging and reasoning as the system grows
 
-Message-driven implicit decision making is intentionally avoided, as it can cause behavior drift when the agent starts adapting too strongly to conversational context rather than architectural intent.
+Implicit message-driven decision making is intentionally avoided, as it can cause behavior drift when the agent adapts too strongly to conversational context rather than architectural intent.
 
 ---
 
 ## 4. Agent State Schema
 
-The agent uses a minimal and explicit state schema to coordinate execution across nodes:
+The agent uses a minimal and explicit state schema:
 
 - `query`  
   The original user question and immutable starting point.
@@ -180,7 +183,107 @@ Execution mode can be controlled via environment variables or command-line flags
 
 ---
 
-## 7. LangGraph vs LangChain Usage
+## 7. LLM Configuration
+
+### Language Model
+
+This project uses **Google Gemini (free tier)** as the default language model via LangChain’s `ChatGoogleGenerativeAI`.
+
+Gemini was chosen because:
+
+- It provides a generous free tier
+- It integrates cleanly with LangChain
+- It is sufficient for advisory-style, reasoning-focused responses
+
+---
+
+### API Key Setup
+
+To run the agent, a Gemini API key must be set as an environment variable.
+
+1. Obtain an API key from Google AI Studio:  
+   https://aistudio.google.com/app/apikey
+
+2. Set the environment variable:
+
+```bash
+export GOOGLE_API_KEY=your_api_key_here
+```
+
+No API key is required to review the architecture or extend the system without executing LLM calls.
+
+---
+
+## 8. Offline Data Strategy
+
+### Data Sources
+
+In offline mode, the agent relies exclusively on locally available documentation.
+
+Primary data sources include:
+
+- LangChain documentation  
+  https://docs.langchain.com/llms.txt  
+  https://docs.langchain.com/llms-full.txt
+
+- LangGraph documentation  
+  https://langchain-ai.github.io/langgraph/llms.txt  
+  https://langchain-ai.github.io/langgraph/llms-full.txt
+
+These files are intended to be downloaded and indexed locally.
+
+---
+
+### Data Preparation Approach
+
+Offline retrieval is designed to be **coverage-first**:
+
+- Multiple relevant sections are retrieved per query
+- The goal is conceptual completeness rather than narrow precision
+- This supports architectural understanding without internet access
+
+---
+
+### Data Update Strategy
+
+If documentation changes, users can refresh offline data by:
+
+1. Re-downloading the latest `llms.txt` or `llms-full.txt` files
+2. Re-indexing them using the same local ingestion process
+
+No automated update mechanism is enforced to keep the system simple and transparent.
+
+---
+
+## 9. Online Data Strategy
+
+In online mode, the agent is allowed to access external sources to complement offline documentation with up-to-date information.
+
+### External Services
+
+The architecture allows integration with free-tier providers such as:
+
+- DuckDuckGo
+- Tavily
+- SerpAPI (free tier)
+
+These services are intentionally not tightly coupled to the graph to preserve flexibility.
+
+---
+
+### Rationale
+
+Online retrieval is used to:
+
+- Access the latest LangGraph or LangChain updates
+- Validate best practices against recent changes
+- Complement offline knowledge without replacing it
+
+API keys for external services can be configured as environment variables following each provider’s documentation.
+
+---
+
+## 10. LangGraph vs LangChain Usage
 
 This project deliberately separates **behavior control** from **capability access**:
 
@@ -198,25 +301,57 @@ LangChain components are orchestrated by LangGraph but do not drive system flow.
 
 ---
 
-## 8. Design Trade-offs
+## 11. Example Questions
 
-This project intentionally avoids:
+The agent is designed to handle questions such as:
 
-- Implicit message-driven decision making
-- Overly complex graph structures
-- Hidden long-term memory or uncontrolled state growth
+- How do I add persistence to a LangGraph agent?
+- What is the difference between StateGraph and MessageGraph?
+- How can I implement human-in-the-loop workflows with LangGraph?
+- How should errors and retries be handled in LangGraph nodes?
+- What are best practices for state management in LangGraph?
 
-These trade-offs favor:
-
-- Clarity over cleverness
-- Predictability over flexibility
-- Long-term maintainability over short-term convenience
-
-Simplicity is treated as an architectural asset rather than a limitation.
+Rather than returning isolated code snippets, the agent explains underlying concepts, trade-offs, and architectural considerations.
 
 ---
 
-## 9. Summary
+## 12. How to Run
+
+### Setup
+
+1. Clone the repository
+2. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+3. Set required environment variables (for online mode):
+
+```bash
+export GOOGLE_API_KEY=your_api_key_here
+```
+
+---
+
+### Run the Agent
+
+```bash
+python main.py "How do I add persistence to a LangGraph agent?"
+```
+
+To enable online mode:
+
+```bash
+export AGENT_MODE=online
+python main.py "What are the latest LangGraph features?"
+```
+
+The project is designed to be runnable on any machine with Python and minimal setup.
+
+---
+
+## 13. Summary
 
 This project demonstrates how **LangGraph can be used as a system design tool**, not just an agent orchestration framework.
 
