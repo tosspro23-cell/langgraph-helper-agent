@@ -1,9 +1,12 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
+import os
 
 def synthesize_answer(state):
-    llm = ChatGoogleGenerativeAI(
-        model="models/gemini-1.5-flash",
+    llm = ChatOpenAI(
+        model="openai/gpt-4o-mini",
+        api_key=os.getenv("OPENROUTER_API_KEY"),
+        base_url="https://openrouter.ai/api/v1",
         temperature=0.3
     )
 
@@ -28,7 +31,4 @@ def synthesize_answer(state):
         )
     )
 
-    return {
-        "final_answer": response.content
-    }
-
+    return {"final_answer": response.content}
