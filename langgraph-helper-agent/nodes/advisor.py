@@ -1,5 +1,5 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 
 def synthesize_answer(state):
     llm = ChatGoogleGenerativeAI(model="gemini-pro")
@@ -27,4 +27,5 @@ Question:
     )
 
     return {"final_answer": response.content}
+
 
