@@ -1,7 +1,9 @@
 def offline_retrieve(state):
     """
     Offline retrieval using locally stored llms.txt documentation.
-    This ensures offline mode does not rely on model internal knowledge.
+
+    This node explicitly loads local documentation files to ensure
+    offline mode does not rely on model internal knowledge.
     """
     docs = []
 
@@ -10,12 +12,20 @@ def offline_retrieve(state):
         "data/langchain_llms.txt",
     ]
 
+    print("\n=== OFFLINE RETRIEVER TRIGGERED ===")
+
     for path in paths:
         try:
             with open(path, "r", encoding="utf-8") as f:
-                docs.append(f.read())
+                content = f.read()
+                docs.append(content)
+                print(f"[OK] Loaded offline document: {path} ({len(content)} chars)")
         except FileNotFoundError:
-            docs.append(f"[ERROR] Missing offline documentation file: {path}")
+            error_msg = f"[ERROR] Missing offline documentation file: {path}"
+            print(error_msg)
+            docs.append(error_msg)
+
+    print("=== END OFFLINE RETRIEVER ===\n")
 
     return {
         "retrieved_context": docs
