@@ -1,4 +1,4 @@
-from langchain.chat_models import ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.prompts import ChatPromptTemplate
 
 def synthesize_answer(state):
@@ -27,3 +27,4 @@ Question:
     )
 
     return {"final_answer": response.content}
+
