@@ -1,20 +1,23 @@
 # LangGraph Helper Agent
 
-A LangGraph-based technical advisor agent designed to help developers understand, design, and reason about LangGraph and LangChain systems.
+A **dual-mode AI technical advisor** built with **LangGraph** to help developers understand, design, and reason about **LangGraph** and **LangChain** systems.
+
+This project is designed as an **assignment-grade, production-minded reference implementation**, emphasizing **explicit control, safety, and explainability** over speculative or implicit agent behavior.
 
 ---
 
 ## 1. Project Overview
 
-This project implements a **LangGraph Helper Agent** focused on system design and architectural reasoning rather than pure code generation.
+The **LangGraph Helper Agent** is intentionally positioned as a **technical advisor**, not a pure code generator.
 
-The agent is intentionally positioned as a **technical advisor**, helping developers understand:
+It helps developers:
 
-- Why certain designs are recommended
-- How different approaches compare
-- What trade-offs exist in production-grade agent systems
+- Understand *why* certain LangGraph patterns exist  
+- Compare architectural alternatives and trade-offs  
+- Reason about state, control flow, and scalability  
+- Avoid hallucination, especially for future-facing questions  
 
-The goal is to provide clear, structured guidance that supports long-term system thinking rather than short-term code output.
+The agent supports **explicit Offline and Online modes**, fully controlled by the user via CLI flags or environment variables.
 
 ---
 
@@ -22,20 +25,25 @@ The goal is to provide clear, structured guidance that supports long-term system
 
 ### 2.1 Technical Advisor over Code Generator
 
-This agent optimizes for **decision quality**, not code throughput.
+Most failures in agent systems happen **before code is written**—in architecture, state design, and control flow.
 
-Most real-world issues in LangGraph-based systems arise **before code is written**—in architecture, state design, and control-flow decisions.  
-Accordingly, the agent focuses on explaining concepts, rationale, and trade-offs instead of producing narrowly scoped code snippets.
+Accordingly, this agent optimizes for:
+
+- Decision quality  
+- Conceptual clarity  
+- System-level thinking  
+
+Rather than generating large amounts of code, the agent explains **design rationale**, **trade-offs**, and **best practices**.
 
 ---
 
 ### 2.2 Coverage-First Offline Mode
 
-Offline mode prioritizes **conceptual coverage and completeness** over narrowly deterministic answers.
+Offline mode prioritizes **coverage and completeness** over narrow precision.
 
-Instead of retrieving a single “best” document chunk, the agent aggregates multiple relevant perspectives to help developers build a correct **mental model**, even without internet access.
+Instead of returning a single “best” snippet, the agent aggregates multiple relevant perspectives to help developers form a **correct mental model**, even without internet access.
 
-This approach reduces the risk of misunderstanding when documentation is incomplete or outdated.
+This reduces misunderstanding when documentation is incomplete or fragmented.
 
 ---
 
@@ -43,12 +51,12 @@ This approach reduces the risk of misunderstanding when documentation is incompl
 
 The system intentionally starts with:
 
-- A minimal graph
-- A small, explicit state schema
-- Clear node responsibilities
+- A minimal graph topology  
+- A small, explicit state schema  
+- Clear node responsibilities  
 
 This simplicity is deliberate.  
-Rather than optimizing for feature richness, the design optimizes for **clarity, predictability, and long-term extensibility**.
+It makes the system easier to reason about, debug, and extend into production features like persistence, memory, and evaluation.
 
 ---
 
@@ -56,309 +64,260 @@ Rather than optimizing for feature richness, the design optimizes for **clarity,
 
 ### 3.1 Graph Overview
 
-The agent is implemented as a single **LangGraph StateGraph** with mode-aware routing:
+The agent is implemented as a single **LangGraph StateGraph** with explicit, mode-based routing:
 
-```text
+```
 User Input
    ↓
-Mode Router
+[ Router ]
    ↓
-Knowledge Retrieval
-  ├─ Offline Knowledge Aggregator
-  └─ Online Knowledge Retriever
-   ↓
-Advisor Answer Synthesizer
-   ↓
-Final Response
+   ├─ offline → [ Offline Retriever ] → [ Advisor ] → END
+   └─ online  → [ Online Retriever  ] → [ Advisor ] → END
 ```
 
-Both offline and online paths converge into the same synthesis node to ensure consistent answer structure and quality.
+Both paths converge into the same **Advisor** node to ensure consistent answer quality and structure.
 
 ---
 
 ### 3.2 Why StateGraph (Not MessageGraph)
 
-This project intentionally uses **StateGraph** instead of MessageGraph to keep agent behavior explicit, predictable, and scalable.
+This project deliberately uses **StateGraph** instead of MessageGraph.
 
-StateGraph enables:
+Reasons:
 
-- Explicit state management
-- Deterministic routing decisions
-- Clear separation between control logic and language generation
-- Easier debugging and reasoning as the system grows
+- Explicit state management  
+- Deterministic routing  
+- Clear separation of control logic and LLM behavior  
+- Easier debugging and long-term scalability  
 
-Implicit message-driven decision making is intentionally avoided, as it can cause behavior drift when the agent adapts too strongly to conversational context rather than architectural intent.
+MessageGraph-style implicit, history-driven decisions are intentionally avoided to prevent behavioral drift and hidden coupling.
 
 ---
 
 ## 4. Agent State Schema
 
-The agent uses a minimal and explicit state schema:
+The agent uses a minimal, explicit state schema:
 
-- `query`  
-  The original user question and immutable starting point.
+- **query**  
+  The original user question (immutable input).
 
-- `mode`  
+- **mode**  
   Execution mode: `offline` or `online`.
 
-- `retrieved_context`  
-  Aggregated knowledge retrieved from documentation or online sources.
+- **retrieved_context**  
+  Aggregated knowledge from offline documents or online search.
 
-- `final_answer`  
+- **final_answer**  
   The synthesized, structured response returned to the user.
 
-Raw message history is intentionally excluded to avoid hidden coupling between nodes and to keep system reasoning transparent.
+Raw message history is intentionally excluded to keep reasoning transparent and deterministic.
 
 ---
 
 ## 5. Node Responsibilities
 
-Each node follows a **single-responsibility principle**, ensuring clarity and maintainability.
+Each node follows a **single-responsibility principle**.
 
----
-
-### Mode Router
-
-- Reads the execution mode from state
-- Selects the appropriate retrieval path
+### Router
+- Reads execution mode
+- Selects retrieval path
 - Contains control logic only
-- Does not perform retrieval or generation
 
----
+### Offline Retriever
+- Uses local documentation (e.g. `llms.txt`)
+- Aggregates multiple relevant sections
+- Optimized for conceptual completeness
 
-### Offline Knowledge Aggregator
-
-- Uses locally indexed documentation (e.g. `llms.txt`)
-- Retrieves multiple relevant segments
-- Prioritizes conceptual coverage and completeness
-- Writes aggregated content into `retrieved_context`
-
-This mode is optimized for learning and architectural understanding rather than precision recall.
-
----
-
-### Online Knowledge Retriever
-
-- Uses free-tier online search services
-- Focuses on information freshness
+### Online Retriever
+- Executes live web search (DuckDuckGo via `ddgs`)
+- Focuses on freshness and recency
 - Does not persist external data
-- Acts as a complement to offline knowledge
 
----
-
-### Advisor Answer Synthesizer
-
-This node represents the core value of the agent as a **technical advisor**.
-
-Responsibilities include:
-
-- Combining retrieved knowledge
-- Explaining concepts and rationale
-- Highlighting trade-offs and alternatives
-- Producing structured, educational responses
-
-The output style is consistent regardless of the retrieval source.
+### Advisor
+- Synthesizes retrieved context
+- Explains concepts and trade-offs
+- Produces structured, educational answers
+- Maintains consistent tone across modes
 
 ---
 
 ## 6. Operating Modes
 
-### 6.1 Offline Mode
-
-- No external web access
+### Offline Mode
+- No internet access
 - Uses local documentation only
-- Suitable for restricted or disconnected environments
-- Optimized for conceptual depth and completeness
+- Deterministic and reproducible
+- Ideal for restricted environments
+
+### Online Mode
+- Enables live web search
+- Retrieves recent updates and announcements
+- Avoids speculation if evidence is weak
 
 ---
 
-### 6.2 Online Mode
+## 7. Mode Switching
 
-- Allows internet connectivity
-- Uses free-tier external services
-- Focuses on up-to-date information
-- Complements offline knowledge
-
-Execution mode can be controlled via environment variables or command-line flags.
-
----
-
-## 7. LLM Configuration
-
-### Language Model
-
-This project uses **Google Gemini (free tier)** as the default language model via LangChain’s `ChatGoogleGenerativeAI`.
-
-Gemini was chosen because:
-
-- It provides a generous free tier
-- It integrates cleanly with LangChain
-- It is sufficient for advisory-style, reasoning-focused responses
-
----
-
-### API Key Setup
-
-To run the agent, a Gemini API key must be set as an environment variable.
-
-1. Obtain an API key from Google AI Studio:  
-   https://aistudio.google.com/app/apikey
-
-2. Set the environment variable:
+### Command Line
 
 ```bash
-export GOOGLE_API_KEY=your_api_key_here
+python main.py --mode offline "How do I use LangGraph checkpointers?"
+python main.py --mode online "What are the latest LangGraph features?"
 ```
 
-No API key is required to review the architecture or extend the system without executing LLM calls.
-
----
-
-## 8. Offline Data Strategy
-
-### Data Sources
-
-In offline mode, the agent relies exclusively on locally available documentation.
-
-Primary data sources include:
-
-- LangChain documentation  
-  https://docs.langchain.com/llms.txt  
-  https://docs.langchain.com/llms-full.txt
-
-- LangGraph documentation  
-  https://langchain-ai.github.io/langgraph/llms.txt  
-  https://langchain-ai.github.io/langgraph/llms-full.txt
-
-These files are intended to be downloaded and indexed locally.
-
----
-
-### Data Preparation Approach
-
-Offline retrieval is designed to be **coverage-first**:
-
-- Multiple relevant sections are retrieved per query
-- The goal is conceptual completeness rather than narrow precision
-- This supports architectural understanding without internet access
-
----
-
-### Data Update Strategy
-
-If documentation changes, users can refresh offline data by:
-
-1. Re-downloading the latest `llms.txt` or `llms-full.txt` files
-2. Re-indexing them using the same local ingestion process
-
-No automated update mechanism is enforced to keep the system simple and transparent.
-
----
-
-## 9. Online Data Strategy
-
-In online mode, the agent is allowed to access external sources to complement offline documentation with up-to-date information.
-
-### External Services
-
-The architecture allows integration with free-tier providers such as:
-
-- DuckDuckGo
-- Tavily
-- SerpAPI (free tier)
-
-These services are intentionally not tightly coupled to the graph to preserve flexibility.
-
----
-
-### Rationale
-
-Online retrieval is used to:
-
-- Access the latest LangGraph or LangChain updates
-- Validate best practices against recent changes
-- Complement offline knowledge without replacing it
-
-API keys for external services can be configured as environment variables following each provider’s documentation.
-
----
-
-## 10. LangGraph vs LangChain Usage
-
-This project deliberately separates **behavior control** from **capability access**:
-
-- **LangGraph** is used as the orchestration and control layer:
-  - Defines execution order
-  - Controls routing and decision logic
-  - Manages explicit system state
-
-- **LangChain** is used as a capability layer:
-  - LLM abstractions
-  - Prompt templates
-  - Retrieval and utility components
-
-LangChain components are orchestrated by LangGraph but do not drive system flow.
-
----
-
-## 11. Example Questions
-
-The agent is designed to handle questions such as:
-
-- How do I add persistence to a LangGraph agent?
-- What is the difference between StateGraph and MessageGraph?
-- How can I implement human-in-the-loop workflows with LangGraph?
-- How should errors and retries be handled in LangGraph nodes?
-- What are best practices for state management in LangGraph?
-
-Rather than returning isolated code snippets, the agent explains underlying concepts, trade-offs, and architectural considerations.
-
----
-
-## 12. How to Run
-
-### Setup
-
-1. Clone the repository
-2. Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-3. Set required environment variables (for online mode):
-
-```bash
-export GOOGLE_API_KEY=your_api_key_here
-```
-
----
-
-### Run the Agent
-
-```bash
-python main.py "How do I add persistence to a LangGraph agent?"
-```
-
-To enable online mode:
+### Environment Variable
 
 ```bash
 export AGENT_MODE=online
 python main.py "What are the latest LangGraph features?"
 ```
 
-The project is designed to be runnable on any machine with Python and minimal setup.
+Mode selection is **explicit** and never inferred from the question text.
 
 ---
 
-## 13. Summary
+## 8. LLM Configuration
 
-This project demonstrates how **LangGraph can be used as a system design tool**, not just an agent orchestration framework.
+### Default Model
 
-By making agent behavior, state, and control flow explicit, the system remains:
+The current implementation uses **OpenRouter-compatible models** (e.g. GPT-4o-mini, Qwen, etc.) via LangChain.
 
-- Easier to reason about
-- Easier to debug
-- Easier to extend across different project contexts
+This choice was made because:
 
-The result is an agent designed for architectural correctness and long-term scalability rather than prompt-based implicit behavior.
+- Stable free-tier availability  
+- Consistent API behavior  
+- Avoids Gemini free-tier instability  
+
+The LLM is used **only in the Advisor node**; it never controls routing.
+
+---
+
+### API Key Setup (OpenRouter)
+
+1. Create an API key at:  
+   https://openrouter.ai/
+
+2. Set environment variable:
+
+```bash
+export OPENROUTER_API_KEY=your_key_here
+```
+
+---
+
+## 9. Offline Data Strategy
+
+### Data Sources
+
+Offline mode relies on locally downloaded documentation:
+
+- LangChain  
+  https://docs.langchain.com/llms.txt  
+  https://docs.langchain.com/llms-full.txt
+
+- LangGraph  
+  https://langchain-ai.github.io/langgraph/llms.txt  
+  https://langchain-ai.github.io/langgraph/llms-full.txt
+
+---
+
+### Data Preparation
+
+- Documents are stored locally
+- Retrieved as plain text
+- Aggregated for conceptual coverage
+- No vector database required at this stage
+
+---
+
+### Data Update Strategy
+
+To refresh offline data:
+
+1. Re-download latest `llms.txt` files
+2. Replace local copies
+
+No automation is enforced to keep the system transparent and auditable.
+
+---
+
+## 10. Online Data Strategy
+
+### External Services
+
+- DuckDuckGo search via `ddgs` (free tier)
+
+### Rationale
+
+Online retrieval is used to:
+
+- Validate recency-sensitive questions
+- Access latest LangGraph / LangChain updates
+- Complement offline knowledge
+
+If search results are weak or inconclusive, the agent will **explicitly state uncertainty**.
+
+---
+
+## 11. LangGraph vs LangChain Roles
+
+- **LangGraph**
+  - Orchestration layer
+  - State management
+  - Routing and control flow
+
+- **LangChain**
+  - Capability layer
+  - LLM abstractions
+  - Prompt templates and utilities
+
+LangChain components never drive control flow directly.
+
+---
+
+## 12. Example Questions
+
+- How do I add persistence to a LangGraph agent?
+- What is the difference between StateGraph and MessageGraph?
+- How can I implement human-in-the-loop workflows?
+- How should retries and errors be handled?
+- What are best practices for state design in LangGraph?
+
+The agent answers by explaining **principles**, not just snippets.
+
+---
+
+## 13. How to Run
+
+### Setup
+
+```bash
+pip install -r requirements.txt
+```
+
+### Run
+
+```bash
+python main.py "How do I add persistence to a LangGraph agent?"
+```
+
+Online mode:
+
+```bash
+export AGENT_MODE=online
+python main.py "What are the latest LangGraph features?"
+```
+
+---
+
+## 14. Summary
+
+This project demonstrates how **LangGraph can be used as a system design tool**, not just an agent framework.
+
+By keeping behavior explicit and state controlled, the agent remains:
+
+- Predictable  
+- Debuggable  
+- Production-extensible  
+
+This makes it suitable for both technical evaluation and real-world system design.
