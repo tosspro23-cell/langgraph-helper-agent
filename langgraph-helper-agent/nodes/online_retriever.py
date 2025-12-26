@@ -1,4 +1,4 @@
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 
 
 def online_retrieve(state):
@@ -34,3 +34,4 @@ def online_retrieve(state):
     print("=== END ONLINE SEARCH ===\n")
 
     return {"retrieved_context": results}
+
