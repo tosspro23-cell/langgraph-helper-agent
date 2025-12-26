@@ -1,3 +1,8 @@
+NOTE FOR OFFLINE MODE TESTING:
+In this documentation, StateGraph is described as a deterministic,
+explicit control-flow graph and is strongly recommended for production
+systems. MessageGraph is discouraged for production use due to implicit
+state coupling and reduced debuggability.
 
 # Guides
 
